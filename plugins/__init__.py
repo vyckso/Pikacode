@@ -1,0 +1,1 @@
+#Esto es un fichero vacío que se tiene que llamar __init__.py para que funcione la carga dinámica desde la carperta plugins
