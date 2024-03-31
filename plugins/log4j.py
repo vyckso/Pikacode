@@ -14,7 +14,8 @@ mainDescription = "Búsqueda de vulnerabilidad log4j CVE-2021-44228"
 
 resultados = []
 
-vulnerable_versions = ['2.0-beta9', '2.14.1'] #Se definen versiones inicial y final
+#vulnerable_versions = ['2.0-beta9', '2.14.1'] #Se definen versiones inicial y final
+vulnerable_versions = ['1.0-beta9', '2.14.1'] #Se definen versiones inicial y final
 
 def returnDesc():
     return mainDescription
@@ -51,13 +52,15 @@ def find_vulnerable_log4j_in_gradle(file_path):
                                           'Posible vulnerabilidad Log4j en: ' + file_path,
                                           'Use versiones sin la vulnerabilidad', 'Alta - CVE-2021-44228'))
 
-def find_vulnerable_log4j_in_jar(file_path):
-    for root, dirs, files in os.walk(file_path):
-        for file in files:
-            if file.startswith('log4j') and file.endswith('.jar'):
-                version = file.split('-')[1]
-                if utils.is_version_in_range(version, vulnerable_versions[0], vulnerable_versions[1]):
-                    print(f'Archivo vulnerable encontrado: {os.path.join(root, file)}')
+def find_vulnerable_log4j_in_jar(file, file_path):
+    if file.startswith('log4j') and file.endswith('.jar'):
+        nombre_sin_extension, extension = os.path.splitext(file)
+        version = nombre_sin_extension.split('-')[1]
+        if utils.is_version_in_range(version, vulnerable_versions[0], vulnerable_versions[1]):
+            #print(f'Archivo vulnerable encontrado: {os.path.join(root, file)}')
+            resultados.append(escaneo('log4J', file, 'N/A', 'N/A',
+                                      'Posible vulnerabilidad Log4j en: ' + file_path,
+                                      'Use versiones sin la vulnerabilidad', 'Alta - CVE-2021-44228'))
 
 def search_directory_for_java_projects(directory):
     """Busca archivos pom.xml y build.gradle en el directorio especificado"""
@@ -69,9 +72,9 @@ def search_directory_for_java_projects(directory):
             elif file == "build.gradle":
                 find_vulnerable_log4j_in_gradle(os.path.join(root, file))
             elif file.startswith('log4j') and file.endswith('.jar'):
-                find_vulnerable_log4j_in_jar(os.path.join(root, file))
+                find_vulnerable_log4j_in_jar(file, os.path.join(root, file))
 
 def execVulCheck(javaPath):
     search_directory_for_java_projects(javaPath)
-    if not resultados:
+    if resultados:
         return resultados

@@ -5,6 +5,7 @@
 
     - Añadimos timeout, definido en la variable timeout en segundos, para la ejecución de los plugins
     - Añadimos la verificación de los plugins, es decir, solo funcionaran aquellos que tengas las dos funciones necesarias (execVulCheck y returnDesc)
+    - Añadimos la opción (-e) para exportar la salida a un fichero en la carpeta exports
 
 
 """
@@ -18,6 +19,7 @@ from tabulate import tabulate
 import multiprocessing
 from multiprocessing import Queue
 import inspect
+from datetime import datetime
 
 classDir = os.path.join(os.path.dirname(__file__), "./app")
 sys.path.append(classDir)
@@ -25,7 +27,7 @@ sys.path.append(classDir)
 #directorio de los plugins para los plugins
 pluginsPath = "./plugins"
 extension = '.py'
-timeout = 10 #Definimos el timeout para ejecución de plugin en segundos
+timeout = 1000 #Definimos el timeout para ejecución de plugin en segundos
 
 #Definimos una clase para la gestión de errores
 class appError(Exception):
@@ -65,7 +67,6 @@ def checkPlugins():
 
     #print(availablePlugins)
 
-
 def ejecutar_plugin(queue, plugin_name, repository):
     vulModule = 'plugins.' + plugin_name
     vulFunction = 'execVulCheck'
@@ -80,7 +81,7 @@ def ejecutar_plugin(queue, plugin_name, repository):
     resultado = funcion(repository)
     queue.put((plugin_name, resultado))
 
-def ejecutaPlugins(args):
+def ejecutaPlugins(args, saveFile, exportFile):
     resultadosFuncion = []
 
     processes = []
@@ -127,9 +128,28 @@ def ejecutaPlugins(args):
              "Código Java": scan.lineaCodigo, "Error": scan.error, "Remediación": scan.remediacion,
              "Severidad": scan.severidad})
 
-    print(tabulate(tablaMostrar, headers="keys", tablefmt="grid"))
+    tabla = tabulate(tablaMostrar, headers="keys", tablefmt="grid")
 
-def ejecutaTodosPlugins(args):
+    print(tabla)
+
+    if saveFile is True:
+        # Ruta de la carpeta relativa al script
+        carpeta_destino = "exports"
+        ruta_completa = os.path.join(os.path.dirname(__file__), carpeta_destino)
+
+        # Crear la carpeta si no existe
+        if not os.path.exists(ruta_completa):
+            os.makedirs(ruta_completa)
+
+        # Ruta del archivo dentro de la carpeta
+        ruta_archivo = os.path.join(ruta_completa, exportFile)
+
+        # Escribir la tabla en el archivo
+        with open(ruta_archivo, "w") as archivo:
+            archivo.write(tabla)
+
+
+def ejecutaTodosPlugins(args, saveFile, exportFile):
 
     resultadosFuncion = []
     processes = []
@@ -179,7 +199,25 @@ def ejecutaTodosPlugins(args):
              "Código Java": scan.lineaCodigo, "Error": scan.error, "Remediación": scan.remediacion,
              "Severidad": scan.severidad})
 
-    print(tabulate(tablaMostrar, headers="keys", tablefmt="grid"))
+    tabla = tabulate(tablaMostrar, headers="keys", tablefmt="grid")
+
+    print(tabla)
+
+    if saveFile is True:
+        # Ruta de la carpeta relativa al script
+        carpeta_destino = "exports"
+        ruta_completa = os.path.join(os.path.dirname(__file__), carpeta_destino)
+
+        # Crear la carpeta si no existe
+        if not os.path.exists(ruta_completa):
+            os.makedirs(ruta_completa)
+
+        # Ruta del archivo dentro de la carpeta
+        ruta_archivo = os.path.join(ruta_completa, exportFile)
+
+        # Escribir la tabla en el archivo
+        with open(ruta_archivo, "w") as archivo:
+            archivo.write(tabla)
 
 def listaPlugins():
     print(f"{bcolors.OK_CYAN}Listado de plugins disponibles:{bcolors.ENDC}")
@@ -229,6 +267,13 @@ def main():
         dest="plugins",
     )
 
+    parser.add_argument(
+        "-e",
+        "--export",
+        help="Save output to a file",
+        action='store_true',
+    )
+
     print(
         f"{bcolors.HEADER}░▒▓███████▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░ ░▒▓██████▓▒░ ░▒▓██████▓▒░░▒▓███████▓▒░░▒▓████████▓▒░ {bcolors.ENDC}")
     print(
@@ -250,6 +295,13 @@ def main():
     # Analizar los argumentos pasados al programa
     args = parser.parse_args()
 
+    if args.export is True:
+        saveFile = True
+        exportFile = datetime.now().strftime("%Y%m%d%H%M%S") + "_Export.txt"
+    else:
+        saveFile = False
+        exportFile = ""
+
     if args.list is True:
         listaPlugins()
     else:
@@ -258,9 +310,9 @@ def main():
             for plugin in args.plugins:
                 print(f"[{bcolors.OK_GREEN}Scanner seleccionado{bcolors.ENDC}] {plugin}")
             if 'all' in args.plugins:
-                ejecutaTodosPlugins(args)
+                ejecutaTodosPlugins(args, saveFile, exportFile)
             else:
-                ejecutaPlugins(args)
+                ejecutaPlugins(args, saveFile, exportFile)
         else:
             print(f"{bcolors.WARNING}No se ha seleccionado ninguna opción valida{bcolors.ENDC}")
             print(f"{bcolors.WARNING}Para la ejecución de la aplicación los parámetros -r y -p son obligatorios{bcolors.ENDC}")
