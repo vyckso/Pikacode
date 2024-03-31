@@ -4,6 +4,7 @@
     * Paquetes requeridos (instalación con pip) agrparse, tabulate, packaging
 
     - Añadimos timeout, definido en la variable timeout en segundos, para la ejecución de los plugins
+    - Añadimos la verificación de los plugins, es decir, solo funcionaran aquellos que tengas las dos funciones necesarias (execVulCheck y returnDesc)
 
 
 """
@@ -16,6 +17,7 @@ import sys
 from tabulate import tabulate
 import multiprocessing
 from multiprocessing import Queue
+import inspect
 
 classDir = os.path.join(os.path.dirname(__file__), "./app")
 sys.path.append(classDir)
@@ -42,6 +44,28 @@ class bcolors:
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
 
+availablePlugins = []
+
+def checkPlugins():
+    ficherosPython = [os.path.splitext(archivo)[0] for archivo in os.listdir(pluginsPath) if
+                      archivo.endswith(extension)]
+
+    for ficheros in ficherosPython:
+        if ficheros != '__init__':
+            #print("-----" + ficheros)
+
+            modulo = importlib.import_module("plugins." + ficheros)
+            funciones = [o for o in inspect.getmembers(modulo) if inspect.isfunction(o[1])]
+
+            if any("execVulCheck" in sublista for sublista in funciones) and any("returnDesc" in sublista for sublista in funciones):
+                availablePlugins.append(ficheros)
+
+            #for nombre, funcion in funciones:
+            #    print(nombre)
+
+    #print(availablePlugins)
+
+
 def ejecutar_plugin(queue, plugin_name, repository):
     vulModule = 'plugins.' + plugin_name
     vulFunction = 'execVulCheck'
@@ -57,11 +81,6 @@ def ejecutar_plugin(queue, plugin_name, repository):
     queue.put((plugin_name, resultado))
 
 def ejecutaPlugins(args):
-    ficherosPython = [os.path.splitext(archivo)[0] for archivo in os.listdir(pluginsPath) if
-                      archivo.endswith(extension)]
-
-    # print(ficherosPython)
-
     resultadosFuncion = []
 
     processes = []
@@ -69,7 +88,7 @@ def ejecutaPlugins(args):
 
     for optionsSelected in args.plugins:
 
-        if optionsSelected not in ficherosPython:
+        if optionsSelected not in availablePlugins:
             print(f"{bcolors.WARNING}Se ha seleccionado un escaneo inexistente - {optionsSelected}")
             raise appError("Se ha seleccionado un escaneo inexistente")
 
@@ -111,15 +130,13 @@ def ejecutaPlugins(args):
     print(tabulate(tablaMostrar, headers="keys", tablefmt="grid"))
 
 def ejecutaTodosPlugins(args):
-    ficherosPython = [os.path.splitext(archivo)[0] for archivo in os.listdir(pluginsPath) if
-                      archivo.endswith(extension)]
 
     resultadosFuncion = []
     processes = []
     queue = Queue()
 
     # TODO: Validar la estructura del plugin (Clase base + validacion de tiempos ejecucion + nmArchivos)
-    for ficheros in ficherosPython:
+    for ficheros in availablePlugins:
         if ficheros != '__init__':
 
             # Crear un proceso para cada plugin
@@ -166,10 +183,8 @@ def ejecutaTodosPlugins(args):
 
 def listaPlugins():
     print(f"{bcolors.OK_CYAN}Listado de plugins disponibles:{bcolors.ENDC}")
-    ficherosPython = [os.path.splitext(archivo)[0] for archivo in os.listdir(pluginsPath) if
-                      archivo.endswith(extension)]
 
-    for ficheros in ficherosPython:
+    for ficheros in availablePlugins:
         if ficheros != '__init__':
             vulModule = 'plugins.' + ficheros
             vulFunction = 'returnDesc'
@@ -253,6 +268,7 @@ def main():
 
 if __name__ == "__main__":
     try:
+        checkPlugins()
         main()
     except appError as e:
         print(f"{bcolors.FAIL}Error en la ejecución de la aplicación")
