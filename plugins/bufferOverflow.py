@@ -78,7 +78,7 @@ def analizar_java_recursivo(javaPath):
         for nombre_archivo in archivos:
             if nombre_archivo.endswith('.java'):
 
-                with open(raiz + '\\' + nombre_archivo, 'r') as file:
+                with open(os.path.join(raiz, nombre_archivo), 'r') as file:
                     content = file.read()
 
                     # Remover comentarios de una línea y bloques de comentarios para evitar falsos positivos
@@ -94,7 +94,7 @@ def analizar_java_recursivo(javaPath):
                     for method_name in method_names:
 
                         #Extraemos el código del método
-                        methodCode = extraer_codigo_funcion(raiz + '\\' + nombre_archivo, method_name)
+                        methodCode = extraer_codigo_funcion(os.path.join(raiz, nombre_archivo), method_name)
 
 
                         # Crear una expresión regular para buscar llamadas a este método
