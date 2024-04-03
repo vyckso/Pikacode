@@ -24,11 +24,6 @@ def execVulCheck(javaPath):
         r"order by",
         r"group by",
         r"having",
-        #Sentencias java más comunes
-        r"PreparedStatement",
-        r"executeQuery",
-        r"executeUpdate",
-        r"createStatement",
     ]
 
     # Compilar una expresión regular simple para buscar potenciales contraseñas
