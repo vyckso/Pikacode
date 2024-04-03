@@ -59,22 +59,21 @@ def extraer_codigo_funcion(nombre_archivo, nombre_funcion):
 
     # Construir la expresión regular para encontrar la función
     # Busca la definición de la función seguida de cualquier cosa hasta la próxima llave de cierre que no esté seguida de otra llave de cierre
-    regex = r"(\b" + re.escape(nombre_funcion) + r"\b.*?\{)([^{}]*((\{[^{}]*\}[^{}]*)*))"
+    regex = (r"(\b" +
+             re.escape(nombre_funcion) +
+             r"\b.*?\{)([^{}]*((\{[^{}]*\}[^{}]*)*))")
 
     # Buscar todas las coincidencias en el código
     matches = re.findall(regex, codigo, re.DOTALL)
 
     if matches:
         # Asumimos que solo hay una definición de la función
-        # Concatenamos el grupo 1 y 2 del match para obtener toda la definición de la función
+        # Devolvemos solo el código contenido en la función
         #return matches[0][0] + matches[0][1]
         return matches[0][1]
-    else:
-        return "Función no encontrada."
 
 def analizar_java_recursivo(javaPath):
-    """Analiza un archivo Java y encuentra las declaraciones de métodos."""
-    prevMethod = ''
+    """Analiza un archivo Java y encuentra las declaraciones de métodos recursivos."""
     for raiz, dirs, archivos in os.walk(javaPath):
         for nombre_archivo in archivos:
             if nombre_archivo.endswith('.java'):
@@ -107,9 +106,6 @@ def analizar_java_recursivo(javaPath):
                                                       'El método ' + method_name + ' parece ser recursivo en ' + nombre_archivo + '.',
                                                       'Evite llamadas recursivas', 'Media'))
 
-
-
-#return metodos
 
 def returnDesc():
     return mainDescription
